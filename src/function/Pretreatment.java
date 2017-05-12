@@ -1,55 +1,27 @@
 package function;
 
 import java.awt.Color;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 import javax.imageio.ImageIO;
 
+import params.Img;
+
 public class Pretreatment {
-	public int[][] piexl;
-
-	// 二值化
-	public Image getBinaryImage(BufferedImage image) throws IOException {
-
-		int width = image.getWidth();
-		int height = image.getHeight();
-
-		BufferedImage binaryImage = new BufferedImage(width, height,
-				BufferedImage.TYPE_BYTE_BINARY);
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				int rgb = image.getRGB(i, j);
-				binaryImage.setRGB(i, j, rgb);
-			}
-		}
-
-		return binaryImage;
-	}
-
-	// 灰度处理
-	public Image getGrayImage(BufferedImage image) throws IOException {
-
-		int width = image.getWidth();
-		int height = image.getHeight();
-
-		BufferedImage grayImage = new BufferedImage(width, height,
-				BufferedImage.TYPE_BYTE_GRAY);
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				int rgb = image.getRGB(i, j);
-				grayImage.setRGB(i, j, rgb);
-			}
-		}
-
-		return grayImage;
-	}
-
+	 float[][] aa;
+	 final int shu = 1;//高斯模糊半径
+	 final int  size = 2*shu+1;//数组大小   
 	// 色彩均衡，取消光照误差
-	public Image getColorImage(BufferedImage image) throws IOException {
-
+	public BufferedImage getColorImage(String url) throws IOException {
+		File filename = new File(url);
+		BufferedImage image = ImageIO.read(filename);
+//		BufferedImage image = new BufferedImage(40,40,BufferedImage.TYPE_INT_RGB);
+//        image.getGraphics().drawImage(slt,0,0,40,40,null);
 		int RedTotal = 0;
 		int GreenTotal = 0;
 		int BlueTotal = 0;
@@ -73,21 +45,22 @@ public class Pretreatment {
 		}
 
 		NumTotal = width * height;
-		//System.out.println(NumTotal);
+		// System.out.println(NumTotal);
 
 		RedAverage = RedTotal / NumTotal;
 		GreenAverage = GreenTotal / NumTotal;
 		BlueAverage = BlueTotal / NumTotal;
-		//System.out.println(RedAverage + " " + GreenAverage + " " + BlueAverage);
+		// System.out.println(RedAverage + " " + GreenAverage + " " +
+		// BlueAverage);
 
 		GrayAverage = (RedAverage + GreenAverage + BlueAverage) / 3;
 
-		//System.out.println("hhh" + GrayAverage);
+		// System.out.println("hhh" + GrayAverage);
 		Kr = (float) GrayAverage / RedAverage;
 		Kg = (float) GrayAverage / GreenAverage;
 		Kb = (float) GrayAverage / BlueAverage;
 
-		//System.out.println(Kr + " " + Kg + " " + Kb);
+		// System.out.println(Kr + " " + Kg + " " + Kb);
 
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
@@ -112,13 +85,14 @@ public class Pretreatment {
 					BlueTemp = (int) (BlueTemp / factor);
 				}
 				myWhite = new Color(RedTemp, GreenTemp, BlueTemp);
-
 				int color = myWhite.getRGB();
 
 				image.setRGB(i, j, color);
+				//System.out.println(color);
 
 			}
 		}
+		// ImageIO.write(image,"jpg",new File("./test/test1.jpg"));
 		return image;
 
 	}
@@ -138,15 +112,17 @@ public class Pretreatment {
 	}
 
 	// 高斯平滑
-	public Image GausslanBlur(BufferedImage image) throws IOException {
-//		File file = new File("d://tupian/IMG_20160726_140328.jpg");
-//		BufferedImage image = ImageIO.read(file);
-
+	public BufferedImage GausslanBlur(BufferedImage image) throws IOException {
+		aa = GaussUtil.get2(GaussUtil.get2DKernalData(shu, 1.5f));
+		// File file = new File(url);
+		// BufferedImage image = ImageIO.read(file);
+//		BufferedImage image = new BufferedImage(30,30,BufferedImage.TYPE_INT_RGB);
+//		image.getGraphics().drawImage(slt,0,0,30,30,null);
 		int width = image.getWidth();
 		int height = image.getHeight();
 		// System.out.println("宽"+width+"高"+height);
-		int[][] martrix = new int[3][3];
-		int[] values = new int[9];
+		int[][] martrix = new int[size][size];
+		int[] values = new int[size*size];
 		// System.out.println("for begin:"+values[8]);
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
@@ -155,6 +131,7 @@ public class Pretreatment {
 				image.setRGB(i, j, avgMatrix(martrix));
 			}
 		}
+//		ImageIO.write(image,"jpg",new File("./test/test2.jpg"));
 		return image;
 	}
 
@@ -170,13 +147,13 @@ public class Pretreatment {
 					continue;
 				}
 				Color c = new Color(x[j]);
-				r += c.getRed();
-				g += c.getGreen();
-				b += c.getBlue();
+				r += c.getRed()*aa[i][j];
+				g += c.getGreen()*aa[i][j];
+				b += c.getBlue()*aa[i][j];
 
 			}
 		}
-		return new Color(r / 8, g / 8, b / 8).getRGB();
+		return new Color(r, g, b).getRGB();
 	}
 
 	private void fillMatrix(int[][] martrix, int[] values) {
@@ -196,8 +173,8 @@ public class Pretreatment {
 		int yStart = j - 1;
 
 		int current = 0;
-		for (int x = xStart; x < 3 + xStart; x++) {
-			for (int y = yStart; y < 3 + yStart; y++) {
+		for (int x = xStart; x < size + xStart; x++) {
+			for (int y = yStart; y < size + yStart; y++) {
 				// System.out.println("x:"+x+"y:"+y);
 				int tx = x;
 				if (tx < 0) {
@@ -216,6 +193,132 @@ public class Pretreatment {
 				values[current++] = image.getRGB(tx, ty);
 			}
 		}
+	}
+
+	// 灰度处理
+	public BufferedImage getGrayImage(BufferedImage image) throws IOException {
+		// File filename = new File(url);
+		// BufferedImage image = ImageIO.read(filename);
+		int width = image.getWidth();
+		int height = image.getHeight();
+		BufferedImage grayImage = new BufferedImage(width, height,
+				BufferedImage.TYPE_BYTE_GRAY);
+		int tr = 0, tg = 0, tb = 0;
+		int ta = 0;
+		for (int i = 0; i < width; i++) {
+
+			for (int j = 0; j < height; j++) {
+				int rgb = image.getRGB(i, j);
+				ta = (rgb >> 24) & 0xff;
+				tr = (rgb >> 16) & 0xff;
+				tg = (rgb >> 8) & 0xff;
+				tb = rgb & 0xff;
+				int gray = (int) (0.299 * tr + 0.587 * tg + 0.114 * tb);
+				rgb = (ta << 24) | (gray << 16) | (gray << 8) | gray;
+				grayImage.setRGB(i, j, rgb);
+			}
+		}
+		// ImageIO.write(grayImage,"jpg",new File("./test/test3.jpg"));
+		return grayImage;
+	}
+
+	public Img getGrayImage(String url, BufferedImage image, String id) throws IOException {
+		// File filename = new File(url);
+		// BufferedImage image = ImageIO.read(filename);
+		int width = image.getWidth();
+		int height = image.getHeight();
+		double[] piexl = new double[width * height];
+
+		BufferedImage grayImage = new BufferedImage(width, height,
+				BufferedImage.TYPE_INT_RGB);
+		int tr = 0, tg = 0, tb = 0;
+		int ta = 0;
+		int index = 0;
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < height; col++) {
+				index = row * width + col;
+				int rgb = image.getRGB(row, col);
+				ta = (rgb >> 24) & 0xff;
+
+				tr = (rgb >> 16) & 0xff;
+				//System.out.println(tr+"r投影");
+				tg = (rgb >> 8) & 0xff;
+				tb = rgb & 0xff;
+				int gray = (int) (0.299 * tr + 0.587 * tg + 0.114 * tb);
+				rgb = (ta << 24) | (gray << 16) | (gray << 8) | gray;
+				piexl[index] = rgb;
+				grayImage.setRGB(row, col, rgb);
+			}
+		}
+		
+		ImageIO.write(grayImage, "jpg", new File("./test/test4.jpg"));
+		//System.exit(0);
+		// 处理过的图片路径写入文件
+		String urls = "./data/AfterPrepare.txt";
+		String contain = id + " " + "dealedImage" + " " + "prepared" + id
+				+ ".jpg";
+		// FileOutputStream in = new FileOutputStream(urls);
+		BufferedWriter in = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(urls, true)));
+		in.write(contain + "\n");
+		in.close();
+		String string = "./dealedImage/" + "prepare" + id + ".jpg";
+		File newFile = new File(string);
+		ImageIO.write(grayImage, "jpg", newFile);
+		Img img = new Img(id, width, height, url, piexl);
+		return img;
+	}
+
+	// 二值化
+	public Img getBinaryImage(BufferedImage image, String id)
+			throws IOException {
+		// File filename = new File(url);
+		// BufferedImage image = ImageIO.read(filename);
+		int width = image.getWidth();
+		int height = image.getHeight();
+		double[] piexl = new double[width * height];
+		BufferedImage binaryImage = new BufferedImage(width, height,
+				BufferedImage.TYPE_BYTE_BINARY);
+		int index = 0;
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				index = row * width + col;
+				int rgb = image.getRGB(row, col);
+				binaryImage.setRGB(row, col, rgb);
+				piexl[index] = rgb;
+				// System.out.println(piexl[i][j]);
+			}
+			// System.out.println("\n");
+		}
+		ImageIO.write(binaryImage, "jpg", new File("./test/test4.jpg"));
+		// 处理过的图片路径写入文件
+		String urls = "./data/AfterPrepare.txt";
+		String contain = id + " " + "dealedImage" + " " + "prepared" + id
+				+ ".jpg";
+		// FileOutputStream in = new FileOutputStream(urls);
+		BufferedWriter in = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(urls, true)));
+		in.write(contain + "\n");
+		in.close();
+		String url = "./dealedImage/" + "prepare" + id + ".jpg";
+		File newFile = new File(url);
+		ImageIO.write(binaryImage, "jpg", newFile);
+		Img img = new Img(id, width, height, url, piexl);
+		return img;
+	}
+
+	public Img prepare(String url, String id) throws IOException {
+//		File filename = new File(url);
+//		BufferedImage image = ImageIO.read(filename);
+		BufferedImage image = this.getColorImage(url);
+		//ImageIO.write(image, "jpg", new File("./test/color.jpg"));
+	    image = this.GausslanBlur(image);
+		// ImageIO.write(image, "jpg", new File("./test/gauss.jpg"));
+		//image = this.getGrayImage(image);
+		// ImageIO.write(image, "jpg", new File("./test/gray.jpg"));
+		Img img = this.getGrayImage(url,image, id);
+		//Img img = this.getBinaryImage(image, id);
+		return img;
 	}
 
 }
