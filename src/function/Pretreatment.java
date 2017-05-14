@@ -19,9 +19,9 @@ public class Pretreatment {
 	// 色彩均衡，取消光照误差
 	public BufferedImage getColorImage(String url) throws IOException {
 		File filename = new File(url);
-		BufferedImage image = ImageIO.read(filename);
-//		BufferedImage image = new BufferedImage(40,40,BufferedImage.TYPE_INT_RGB);
-//        image.getGraphics().drawImage(slt,0,0,40,40,null);
+		BufferedImage slt = ImageIO.read(filename);
+		BufferedImage image = new BufferedImage(30,30,BufferedImage.TYPE_INT_RGB);
+		image.getGraphics().drawImage(slt,0,0,30,30,null);
 		int RedTotal = 0;
 		int GreenTotal = 0;
 		int BlueTotal = 0;
@@ -312,7 +312,7 @@ public class Pretreatment {
 //		BufferedImage image = ImageIO.read(filename);
 		BufferedImage image = this.getColorImage(url);
 		//ImageIO.write(image, "jpg", new File("./test/color.jpg"));
-	    image = this.GausslanBlur(image);
+	    //image = this.GausslanBlur(image);
 		// ImageIO.write(image, "jpg", new File("./test/gauss.jpg"));
 		//image = this.getGrayImage(image);
 		// ImageIO.write(image, "jpg", new File("./test/gray.jpg"));

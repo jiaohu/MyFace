@@ -7,3 +7,4 @@
 7 ForTestImage cat.jpg
 8 ForTestImage shanghai.jpg
 9 ForTestImage youyang.jpg
+10 ForTestImage wuge.jpg
