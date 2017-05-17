@@ -16,6 +16,7 @@ public class Pretreatment {
 	 float[][] aa;
 	 final int shu = 1;//高斯模糊半径
 	 final int  size = 2*shu+1;//数组大小   
+	 String console = "./console.txt";
 	// 色彩均衡，取消光照误差
 	public BufferedImage getColorImage(String url) throws IOException {
 		File filename = new File(url);
@@ -92,7 +93,8 @@ public class Pretreatment {
 
 			}
 		}
-		// ImageIO.write(image,"jpg",new File("./test/test1.jpg"));
+		//ImageIO.write(image,"jpg",new File("./test/test1.jpg"));
+		//System.exit(0);
 		return image;
 
 	}
@@ -203,19 +205,25 @@ public class Pretreatment {
 		int height = image.getHeight();
 		BufferedImage grayImage = new BufferedImage(width, height,
 				BufferedImage.TYPE_BYTE_GRAY);
+		double[] piexl = new double[width * height];
 		int tr = 0, tg = 0, tb = 0;
 		int ta = 0;
-		for (int i = 0; i < width; i++) {
+		int index = 0;
+		for (int row = 0; row < height; row++) {
 
-			for (int j = 0; j < height; j++) {
-				int rgb = image.getRGB(i, j);
+			for (int col = 0; col < width; col++) {
+				index = row * width + col;
+				int rgb = image.getRGB(row, col);
 				ta = (rgb >> 24) & 0xff;
+
 				tr = (rgb >> 16) & 0xff;
+				//System.out.println(tr+"r投影");
 				tg = (rgb >> 8) & 0xff;
 				tb = rgb & 0xff;
 				int gray = (int) (0.299 * tr + 0.587 * tg + 0.114 * tb);
 				rgb = (ta << 24) | (gray << 16) | (gray << 8) | gray;
-				grayImage.setRGB(i, j, rgb);
+				piexl[index] = gray;
+				grayImage.setRGB(row, col, rgb);
 			}
 		}
 		// ImageIO.write(grayImage,"jpg",new File("./test/test3.jpg"));
@@ -235,7 +243,7 @@ public class Pretreatment {
 		int ta = 0;
 		int index = 0;
 		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < height; col++) {
+			for (int col = 0; col < width; col++) {
 				index = row * width + col;
 				int rgb = image.getRGB(row, col);
 				ta = (rgb >> 24) & 0xff;
@@ -246,12 +254,12 @@ public class Pretreatment {
 				tb = rgb & 0xff;
 				int gray = (int) (0.299 * tr + 0.587 * tg + 0.114 * tb);
 				rgb = (ta << 24) | (gray << 16) | (gray << 8) | gray;
-				piexl[index] = rgb;
+				piexl[index] = gray;
 				grayImage.setRGB(row, col, rgb);
 			}
 		}
 		
-		ImageIO.write(grayImage, "jpg", new File("./test/test4.jpg"));
+		//ImageIO.write(grayImage, "jpg", new File("./test/test4.jpg"));
 		//System.exit(0);
 		// 处理过的图片路径写入文件
 		String urls = "./data/AfterPrepare.txt";
@@ -290,7 +298,7 @@ public class Pretreatment {
 			}
 			// System.out.println("\n");
 		}
-		ImageIO.write(binaryImage, "jpg", new File("./test/test4.jpg"));
+		//ImageIO.write(binaryImage, "jpg", new File("./test/test4.jpg"));
 		// 处理过的图片路径写入文件
 		String urls = "./data/AfterPrepare.txt";
 		String contain = id + " " + "dealedImage" + " " + "prepared" + id
@@ -309,7 +317,9 @@ public class Pretreatment {
 
 	public Img prepare(String url, String id) throws IOException {
 //		File filename = new File(url);
+//		
 //		BufferedImage image = ImageIO.read(filename);
+
 		BufferedImage image = this.getColorImage(url);
 		//ImageIO.write(image, "jpg", new File("./test/color.jpg"));
 	    //image = this.GausslanBlur(image);
@@ -317,8 +327,49 @@ public class Pretreatment {
 		//image = this.getGrayImage(image);
 		// ImageIO.write(image, "jpg", new File("./test/gray.jpg"));
 		Img img = this.getGrayImage(url,image, id);
+		//System.out.println(filename);
 		//Img img = this.getBinaryImage(image, id);
+		//double[] ans  = img.getPiexl();
+//		BufferedWriter cons = new BufferedWriter(new OutputStreamWriter(
+//				new FileOutputStream(console, true)));
+//		for(int i=0;i<ans.length;i++){
+//			cons.append(ans[i]+"#");
+//		}
+//		cons.append("\n");
+//		cons.close();
 		return img;
 	}
+	public Img prepareTest(String url , String id) throws IOException{
+		File filename = new File(url);
+		
+		BufferedImage slt = ImageIO.read(filename);
+		
+		BufferedImage image = new BufferedImage(30,30,BufferedImage.TYPE_INT_RGB);
+		image.getGraphics().drawImage(slt,0,0,30,30,null);
+		int width = image.getWidth();
+		int height = image.getHeight();
+		double[] piexl = new double[width*height];
+		int index = 0;
+		int tr=0;
+		int tg=0;
+		int tb=0;
+		for(int row =0;row<height;row++)
+		{
+			for(int col = 0;col<width;col++){
+				int rgb = image.getRGB(row, col);
+				index = row*width + col;
+				tr = (rgb >> 16) & 0xff;
+				//System.out.println(tr+"r投影");
+				tg = (rgb >> 8) & 0xff;
+				tb = rgb & 0xff;
+				piexl[index] = tr;
+				
+			}
+		}
+		
+		Img img = new Img(id,width,height,url,piexl);
 
+		return img;
+		
+	}
 }
